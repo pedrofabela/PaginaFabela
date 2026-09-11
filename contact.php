@@ -29,10 +29,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-T79HS2X9');</script>
 <!-- End Google Tag Manager -->
 <head>
-
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
-
   <!-- Basic Page Needs
 ================================================== -->
   <meta charset="utf-8">
@@ -65,79 +61,94 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   <link rel="stylesheet" href="plugins/colorbox/colorbox.css">
   <!-- Template styles-->
   <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,600,0,0&display=swap">
+  <link rel="stylesheet" href="css/active-pages-modern.css">
 
 
 </head>
-<script>
-  function validarFormulario() {
-      var nombre = document.getElementById('nombre').value;
-      var correo = document.getElementById('correo').value;
-      var telefono = document.getElementById('telefono').value;
+  <script>
+    function validarFormulario() {
+      var nombre = document.getElementById('nombre').value.trim();
+      var correo = document.getElementById('correo').value.trim();
+      var telefono = document.getElementById('telefono').value.trim();
+      var esHumano = document.getElementById('esHumano').checked;
 
-      // Validaciones básicas
+      // Validaciones basicas
       if (nombre === '' || correo === '' || telefono === '') {
-          alert('Por favor, completa todos los campos.');
-          return false;
+        alert('Por favor, completa todos los campos.');
+        return false;
       }
 
-      // Validación de correo electrónico
+      // Validacion de correo electronico
       var regexCorreo = /^\S+@\S+\.\S+$/;
       if (!regexCorreo.test(correo)) {
-          alert('Por favor, ingresa un correo electrónico válido.');
-          return false;
+        alert('Por favor, ingresa un correo electronico valido.');
+        return false;
       }
 
-      // Validación de número de teléfono (solo números)
-      var regexTelefono = /^\d+$/;
+      // Validacion de telefono con formato comun (digitos, espacios, +, -, parentesis)
+      var regexTelefono = /^[0-9+\-\s()]{7,20}$/;
       if (!regexTelefono.test(telefono)) {
-          alert('Por favor, ingresa un número de teléfono válido.');
-          return false;
+        alert('Por favor, ingresa un numero de telefono valido.');
+        return false;
       }
 
-   
-
-    if (esHumano === false) {
-        alert("Confirma que heres humano.");
-        return false; // Evita que el formulario se envíe
-    }
+      if (!esHumano) {
+        alert('Confirma que eres humano.');
+        return false;
+      }
 
       return true;
-  }
-</script>
-<script>
-    // Función para mostrar el mensaje flotante
+    }
+  </script>
+  <script>
+    // Funcion para mostrar el mensaje flotante
     function mostrarMensajeFlotante(mensaje) {
-        var mensajeFlotante = document.getElementById('mensaje-flotante');
-        mensajeFlotante.innerHTML = mensaje;
-        mensajeFlotante.style.display = 'block';
+      var mensajeFlotante = document.getElementById('mensaje-flotante');
+      mensajeFlotante.innerHTML = mensaje;
+      mensajeFlotante.style.display = 'block';
 
-        // Cierra el mensaje después de 5 segundos (puedes ajustar el tiempo)
-        setTimeout(function () {
-            mensajeFlotante.style.display = 'none';
-        }, 5000);
+      // Cierra el mensaje despues de 5 segundos
+      setTimeout(function () {
+        mensajeFlotante.style.display = 'none';
+      }, 5000);
     }
 
-    // Función para cerrar el mensaje
     function cerrarMensaje() {
-        document.getElementById('mensaje-flotante').style.display = 'none';
+      document.getElementById('mensaje-flotante').style.display = 'none';
     }
 
-    // Muestra el mensaje si la URL contiene 'success=1'
+    // Muestra mensajes segun los parametros de la URL
     window.onload = function () {
-        if (window.location.search.includes('success=1')) {
-            mostrarMensajeFlotante('<span  class="cerrar-mensaje" onclick="cerrarMensaje()">El registro se ha insertado correctamente.</span>');
+      var params = new URLSearchParams(window.location.search);
+
+      if (params.get('success') === '1') {
+        if (params.get('mail') === '0') {
+          mostrarMensajeFlotante('<span class="cerrar-mensaje" onclick="cerrarMensaje()">Recibimos tu mensaje, pero hubo un problema al enviar la notificacion por correo. Te contactaremos pronto.</span>');
+          return;
         }
+        mostrarMensajeFlotante('<span class="cerrar-mensaje" onclick="cerrarMensaje()">Tu mensaje se envio correctamente.</span>');
+        return;
+      }
+
+      if (params.get('error') === 'validation') {
+        mostrarMensajeFlotante('<span class="cerrar-mensaje" onclick="cerrarMensaje()">Verifica los datos capturados e intenta nuevamente.</span>');
+        return;
+      }
+
+      if (params.get('error') === 'db' || params.get('error') === 'method') {
+        mostrarMensajeFlotante('<span class="cerrar-mensaje" onclick="cerrarMensaje()">No fue posible procesar tu solicitud en este momento.</span>');
+      }
     };
-</script>
+  </script>
 
-
-
-
-<body>
-  <!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T79HS2X9"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
+  <body class="active-page contact-modern">
+    <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T79HS2X9"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
   <div class="body-inner">
 
     <div id="top-bar" class="top-bar">
@@ -196,7 +207,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   <div class="info-box">
                     <div class="info-box-content">
                         <p class="info-box-title">Envíenos un correo electrónico</p>
-                        <p class="info-box-subtitle">ventas@refacccionesfabela.com.mx</p>
+                        <p class="info-box-subtitle">ventas@refaccionesfabela.com.mx</p>
                     </div>
                   </div>
                 </li>                 
@@ -319,6 +330,25 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <div id="mensaje-flotante" class="mensaje-flotante"></div>
 
+<section class="contact-intro-strip">
+  <div class="container">
+    <div class="contact-intro-grid reveal-up">
+      <div class="contact-intro-card">
+        <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+        <p>Lunes a Viernes: 09:00 - 18:00</p>
+      </div>
+      <div class="contact-intro-card">
+        <span class="material-symbols-outlined" aria-hidden="true">local_shipping</span>
+        <p>Envios a todo Mexico</p>
+      </div>
+      <div class="contact-intro-card">
+        <span class="material-symbols-outlined" aria-hidden="true">support_agent</span>
+        <p>Atencion personalizada</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="main-container" class="main-container">
   <div class="container">
 
@@ -334,7 +364,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="col-md-4">
         <div class="ts-service-box-bg text-center h-100">
           <span class="ts-service-icon icon-round">
-            <i class="fas fa-map-marker-alt mr-0"></i>
+            <span aria-hidden="true" class="material-symbols-outlined">location_on</span>
           </span>
           <div class="ts-service-box-content">
             <h4>Visite nuestra tienda</h4>
@@ -346,11 +376,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="col-md-4">
         <div class="ts-service-box-bg text-center h-100">
           <span class="ts-service-icon icon-round">
-            <i class="fa fa-envelope mr-0"></i>
+            <span aria-hidden="true" class="material-symbols-outlined">mail</span>
           </span>
           <div class="ts-service-box-content">
             <h4>Correo electrónico</h4>
-            <p>ventas@refacionesfabela.com.mx</p>
+            <p>ventas@refaccionesfabela.com.mx</p>
           </div>
         </div>
       </div><!-- Col 2 end -->
@@ -358,7 +388,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="col-md-4">
         <div class="ts-service-box-bg text-center h-100">
           <span class="ts-service-icon icon-round">
-            <i class="fa fa-phone-square mr-0"></i>
+            <span aria-hidden="true" class="material-symbols-outlined">call</span>
           </span>
           <div class="ts-service-box-content">
             <h4>Teléfono</h4>
@@ -378,7 +408,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <div class="row">
       <div class="col-md-12">
-        <h3 class="column-title">Dejanos tu mensaje y con gusto nos comunicámos</h3>
+        <h3 class="column-title"><span class="material-symbols-outlined" aria-hidden="true">chat</span> Dejanos tu mensaje y con gusto nos comunicamos</h3>
         <!-- contact form works with formspree.io  -->
         <!-- contact form activation doc: https://docs.themefisher.com/constra/contact-form/ -->
 
@@ -422,7 +452,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             
           </div>
           <div class="text-right"><br>
-            <button class="btn btn-primary solid blank" type="submit">Enviar mensaje</button>
+            <button class="btn btn-primary solid blank" type="submit"><span class="material-symbols-outlined" aria-hidden="true">send</span> Enviar mensaje</button>
           </div>
 
         
@@ -528,6 +558,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <!-- Template custom -->
   <script src="js/script.js"></script>
+  <script src="js/active-pages-modern.js" defer></script>
 
   </div><!-- Body inner end -->
   </body>

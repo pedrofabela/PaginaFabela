@@ -1,86 +1,120 @@
 <?php
+declare(strict_types=1);
 
-use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
 
-require 'PHPMailer/Exception.php';
-require 'PHPMailer/PHPMailer.php';
-require 'PHPMailer/SMTP.php';
+require __DIR__ . '/PHPMailer/Exception.php';
+require __DIR__ . '/PHPMailer/PHPMailer.php';
+require __DIR__ . '/PHPMailer/SMTP.php';
 
-// Conexión a la base de datos
-$servername = "localhost";
-$username = "refac539_usr";
-$password = "fabela20";
-$dbname = "refac539_mensaje";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verificar la conexión
-if ($conn->connect_error) {
-    die("Conexión fallida: " . $conn->connect_error);
+function redirectToContact(array $params = []): void
+{
+    $query = http_build_query($params);
+    $location = 'contact.php' . ($query !== '' ? ('?' . $query) : '');
+    header('Location: ' . $location);
+    exit;
 }
 
-// Recibir datos del formulario
-$nombre = $_POST['nombre'];
-$correo = $_POST['correo'];
-$telefono = $_POST['telefono'];
-$mensaje = $_POST['mensaje'];
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    redirectToContact(['error' => 'method']);
+}
 
-// Preparar la consulta SQL (con declaración preparada para prevenir SQL injection)
-$stmt = $conn->prepare("INSERT INTO tabla_mensaje (nombre, correo, telefono, mensaje) VALUES (?, ?, ?, ?)");
-$stmt->bind_param("ssss", $nombre, $correo, $telefono, $mensaje);
+$nombre = trim((string) ($_POST['nombre'] ?? ''));
+$correo = trim((string) ($_POST['correo'] ?? ''));
+$telefono = trim((string) ($_POST['telefono'] ?? ''));
+$mensaje = trim((string) ($_POST['mensaje'] ?? ''));
+$esHumano = (string) ($_POST['esHumano'] ?? 'on');
 
+if ($nombre === '' || $correo === '' || $telefono === '' || $mensaje === '') {
+    redirectToContact(['error' => 'validation']);
+}
 
-$mail = new PHPMailer(true);
+if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+    redirectToContact(['error' => 'validation']);
+}
+
+if (!preg_match('/^[0-9+\-\s()]{7,20}$/', $telefono)) {
+    redirectToContact(['error' => 'validation']);
+}
+
+if ($esHumano !== 'on') {
+    redirectToContact(['error' => 'validation']);
+}
+
+$dbHost = getenv('FABELA_DB_HOST') ?: 'localhost';
+$dbUser = getenv('FABELA_DB_USER') ?: 'refac539_usr';
+$dbPass = getenv('FABELA_DB_PASS') ?: 'fabela20';
+$dbName = getenv('FABELA_DB_NAME') ?: 'refac539_mensaje';
+
+$conn = null;
+$stmt = null;
 
 try {
-    //Server settings
-    $mail->SMTPDebug = 2;                      //Enable verbose debug output
-    $mail->isSMTP();                                            //Send using SMTP
-    $mail->Host       = 'mail.refaccionesfabela.com';                     //Set the SMTP server to send through
-    $mail->SMTPAuth   = true;                                   //Enable SMTP authentication
-    $mail->Username   = 'web@refaccionesfabela.com';                     //SMTP username
-    $mail->Password   = 'F@be2l@#20';                               //SMTP password
-    $mail->SMTPSecure = 'tls';            //Enable implicit TLS encryption
-    $mail->Port       = 587;                                    //TCP port to connect to; use 587 if you have set `SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS`
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-    //Recipients
-    $mail->setFrom('web@refaccionesfabela.com','Refacciones Fabela');
-    $mail->addAddress('ventas@refaccionesfabela.com.mx'); 
-    $mail->addAddress('fabela_mauricio@hotmail.com');     //Add a recipient
- 
+    $conn = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+    $conn->set_charset('utf8mb4');
 
-    //Content
+    $stmt = $conn->prepare('INSERT INTO tabla_mensaje (nombre, correo, telefono, mensaje) VALUES (?, ?, ?, ?)');
+    $stmt->bind_param('ssss', $nombre, $correo, $telefono, $mensaje);
+    $stmt->execute();
+} catch (Throwable $e) {
+    error_log('Error al guardar formulario: ' . $e->getMessage());
+    redirectToContact(['error' => 'db']);
+} finally {
+    if ($stmt instanceof mysqli_stmt) {
+        $stmt->close();
+    }
 
-    $mensaje_pagina="Nombre del cliente: ".$_POST['nombre']."\n Correo:".$_POST['correo']." \n Tel: ".$_POST['telefono']." \n Mensaje: ".$_POST['mensaje'];
+    if ($conn instanceof mysqli) {
+        $conn->close();
+    }
+}
 
-    $mail->isHTML(true);                                  //Set email format to HTML
-    $mail->Subject = 'Nuevo contacto de cliente desde la pagina WEB';
-    $mail->Body    = $mensaje_pagina;
-    
+$mailSent = false;
+
+try {
+    $smtpHost = getenv('FABELA_SMTP_HOST') ?: 'mail.refaccionesfabela.com';
+    $smtpUser = getenv('FABELA_SMTP_USER') ?: 'web@refaccionesfabela.com';
+    $smtpPass = getenv('FABELA_SMTP_PASS') ?: 'F@be2l@#20';
+    $smtpPort = (int) (getenv('FABELA_SMTP_PORT') ?: 587);
+
+    $mail = new PHPMailer(true);
+    $mail->SMTPDebug = 0;
+    $mail->isSMTP();
+    $mail->Host = $smtpHost;
+    $mail->SMTPAuth = true;
+    $mail->Username = $smtpUser;
+    $mail->Password = $smtpPass;
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port = $smtpPort;
+
+    $mail->setFrom($smtpUser, 'Refacciones Fabela');
+    $mail->addAddress(getenv('FABELA_MAIL_TO_1') ?: 'ventas@refaccionesfabela.com.mx');
+
+    $mailTo2 = getenv('FABELA_MAIL_TO_2') ?: 'fabela_mauricio@hotmail.com';
+    if ($mailTo2 !== '') {
+        $mail->addAddress($mailTo2);
+    }
+
+    $mailBody = "Nombre del cliente: {$nombre}\n" .
+        "Correo: {$correo}\n" .
+        "Tel: {$telefono}\n" .
+        "Mensaje: {$mensaje}";
+
+    $mail->isHTML(false);
+    $mail->Subject = 'Nuevo contacto de cliente desde la pagina web';
+    $mail->Body = $mailBody;
 
     $mail->send();
-    echo 'Message has been sent';
+    $mailSent = true;
 } catch (Exception $e) {
-    echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+    error_log('Error al enviar correo del formulario: ' . $e->getMessage());
 }
 
-
-
-
-
-
-
-// Ejecutar la consulta
-if ($stmt->execute()) {
-    
-    header("Location: {$_SERVER['HTTP_REFERER']}?success=1");
-    exit();
-} else {
-    echo "Error al insertar el registro: " . $stmt->error;
+if ($mailSent) {
+    redirectToContact(['success' => '1']);
 }
 
-// Cerrar la conexión
-$stmt->close();
-$conn->close();
-?>
+redirectToContact(['success' => '1', 'mail' => '0']);
